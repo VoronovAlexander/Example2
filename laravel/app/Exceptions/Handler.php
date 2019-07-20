@@ -4,6 +4,11 @@ namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Auth\AuthenticationException as AuthException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\Debug\Exception\FatalThrowableError;
 
 class Handler extends ExceptionHandler
 {
@@ -46,6 +51,75 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        // Если ошибка связана с валидацией
+        if ($exception instanceof ValidationException) {
+            if ($request->ajax() || $request->wantsJson()) {
+                $json = [
+                    'status' => false,
+                    'errors' => [],
+                ];
+                foreach ($exception->errors() as $key => $error) {
+                    $json['errors'][] = [
+                        'code' => 422,
+                        'field' => $key,
+                        'message' => 'VALIDATION_EXCEPTION',
+                        'description' => $error[0],
+                    ];
+                }
+
+                return response()->json($json, 200);
+            }
+        }
+
+        // Если ошибка связана с недостатком прав
+        if ($exception instanceof AuthorizationException || $exception instanceof AuthException) {
+            if ($request->ajax() || $request->wantsJson()) {
+                $json = [
+                    'status' => false,
+                    'errors' => [],
+                ];
+                $json['errors'][] = [
+                    'code' => 403,
+                    'message' => 'AUTHORIZATION_EXCEPTION',
+                    'description' => $exception->getMessage(), //$request->language == "ru" ? 'Доступ запрещен. Возможно объект принадлежит другому пользователю.' : 'Permission denied. Maybe the object belongs to another user.',
+                ];
+                return response()->json($json, 200);
+            }
+        }
+
+        // Если ошибка на сервере
+        if ($exception instanceof FatalThrowableError) {
+            if ($request->ajax() || $request->wantsJson()) {
+                $json = [
+                    'status' => false,
+                    'errors' => [],
+                ];
+                $json['errors'][] = [
+                    'code' => 500,
+                    'message' => 'REAL_500', //,$exception->getMessage(),
+                    'description' => $exception->getTrace(),
+                ];
+                return response()->json($json, 200);
+            }
+        }
+
+        // Если ошибка в запросе
+        if ($exception instanceof QueryException) {
+            if ($request->ajax() || $request->wantsJson()) {
+                $json = [
+                    'status' => false,
+                    'errors' => [],
+                ];
+                $json['errors'][] = [
+                    'code' => 500,
+                    'message' => 'QUERY_EXCEPTION',
+                    'description' => $exception->getMessage(),
+                    'trace' => $exception->getTrace(),
+                ];
+                return response()->json($json, 200);
+            }
+        }
+
         return parent::render($request, $exception);
     }
 }
