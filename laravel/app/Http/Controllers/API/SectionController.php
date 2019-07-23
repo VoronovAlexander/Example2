@@ -19,6 +19,7 @@ class SectionController extends Controller
     {
         $this->sections = $section;
     }
+    
     /**
      * Листинг отделов
      *

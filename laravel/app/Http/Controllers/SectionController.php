@@ -9,7 +9,7 @@ class SectionController extends Controller
     /**
      * Листинг отделов
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function index()
     {
@@ -19,7 +19,7 @@ class SectionController extends Controller
     /**
      * Создание отдела
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function create()
     {
@@ -32,7 +32,7 @@ class SectionController extends Controller
      * Редактирование отдела
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function edit($id)
     {

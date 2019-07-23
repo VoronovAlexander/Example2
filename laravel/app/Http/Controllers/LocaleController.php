@@ -10,7 +10,7 @@ class LocaleController extends Controller
      * Изменение локализации
      *
      * @param string $locale
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function change($locale)
     {

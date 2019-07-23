@@ -9,7 +9,7 @@ class UserController extends Controller
     /**
      * Листинг пользователей
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function index()
     {
@@ -19,7 +19,7 @@ class UserController extends Controller
     /**
      * Создание пользователя
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function create()
     {
@@ -32,7 +32,7 @@ class UserController extends Controller
      * Редактирование пользователя
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function edit($id)
     {
