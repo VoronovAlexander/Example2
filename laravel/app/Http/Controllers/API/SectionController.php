@@ -5,19 +5,17 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\sections\StoreRequest;
 use App\Http\Requests\API\sections\UpdateRequest;
-use App\Section;
+use App\Repositories\SectionRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use League\Flysystem\File;
 
 class SectionController extends Controller
 {
 
-    private $sections;
+    private $sectionRepository;
 
-    public function __construct(Section $section)
+    public function __construct(SectionRepository $sectionRepository)
     {
-        $this->sections = $section;
+        $this->sectionRepository = $sectionRepository;
     }
     
     /**
@@ -25,16 +23,13 @@ class SectionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $per_page = request('per_page', 10);
+        $page = (int) $request->input('page', 1);
+        $per_page = (int) $request->input('per_page', 15);
 
-        $sections = $this->sections
-            ->with(['users' => function ($query) {
-                $query->orderByDesc('id');
-            }])
-            ->orderByDesc('id')
-            ->paginate($per_page);
+        $sections = $this->sectionRepository
+            ->getIndex($page, $per_page);
 
         return $this->getJsonPaginate($sections);
     }
@@ -48,17 +43,10 @@ class SectionController extends Controller
     public function store(StoreRequest $request)
     {
         $data = $request->input();
+        $data['logo'] = $request->file('logo');
 
-        if ($request->file('logo')) {
-            $data['logo'] = $request->file('logo')
-                ->store('logo', 'public');
-        }
-
-        $section = $this->sections
-            ->create($data);
-
-        $section->users()
-            ->sync($request->user_ids);
+        $section = $this->sectionRepository
+            ->store($data);
 
         return $this->getJson($section);
     }
@@ -69,10 +57,10 @@ class SectionController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(int $id)
     {
-        $section = $this->sections
-            ->find($id);
+        $section = $this->sectionRepository
+            ->getShow($id);
 
         return $this->getJson($section);
     }
@@ -84,25 +72,13 @@ class SectionController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateRequest $request, $id)
+    public function update(UpdateRequest $request, int $id)
     {
         $data = $request->input();
+        $data['logo'] = $request->file('logo');
 
-        $section = $this->sections
-            ->find($id);
-
-        if ($request->file('logo')) {
-            if ($section->logo) {
-                Storage::delete($section->logo);
-            }
-            $data['logo'] = $request->file('logo')
-                ->store('logo', 'public');
-        }
-
-        $section->update($data);
-
-        $section->users()
-            ->sync($request->user_ids);
+        $section = $this->sectionRepository
+            ->update($id, $data);
 
         return $this->getJson($section);
     }
@@ -113,15 +89,10 @@ class SectionController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        $section = $this->sections
-            ->find($id);
-
-        if ($section->logo) {
-            Storage::delete($section->logo);
-        }
-        $section->delete();
+        $this->sectionRepository
+            ->destroy($id);
 
         return $this->getJson(null);
     }

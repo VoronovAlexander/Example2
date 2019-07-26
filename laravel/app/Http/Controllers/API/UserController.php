@@ -5,18 +5,23 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\users\StoreRequest;
 use App\Http\Requests\API\users\UpdateRequest;
+use App\Repositories\UserRepository;
 use App\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
 
-    private $user;
+    private $userRepository;
 
-    public function __construct(User $user)
+    /**
+     * Создание UserController
+     *
+     * @param UserRepository $userRepository
+     */
+    public function __construct(UserRepository $userRepository)
     {
-        $this->user = $user;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -26,22 +31,24 @@ class UserController extends Controller
      */
     public function all()
     {
-        $users = $this->user->all();
+        $users = $this->userRepository
+            ->getAll();
         return $this->getJson($users);
     }
 
     /**
-     * Листинг пользователя
+     * Листинг пользователей
      *
+     * @param Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $per_page = request('per_page', 10);
+        $page = (int) $request->input('page', 1);
+        $per_page = (int) $request->input('per_page', 10);
 
-        $users = $this->user
-            ->orderByDesc('id')
-            ->paginate($per_page);
+        $users = $this->userRepository
+            ->getIndex($page, $per_page);
 
         return $this->getJsonPaginate($users);
     }
@@ -49,19 +56,15 @@ class UserController extends Controller
     /**
      * Создание нового пользователя
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  App\Http\Requests\API\users\StoreRequest  $request
      * @return \Illuminate\Http\Response
      */
     public function store(StoreRequest $request)
     {
         $data = $request->input();
 
-        if ($data['password']) {
-            $data['password'] = Hash::make($data['password']);
-        }
-
-        $user = $this->user
-            ->create($data);
+        $user = $this->userRepository
+            ->store($data);
 
         return $this->getJson($user);
     }
@@ -72,10 +75,10 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(int $id)
     {
-        $user = $this->user
-            ->find($id);
+        $user = $this->userRepository
+            ->getShow($id);
 
         return $this->getJson($user);
     }
@@ -83,28 +86,18 @@ class UserController extends Controller
     /**
      * Изменение пользователя
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  App\Http\Requests\API\users\UpdateRequest  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateRequest $request, $id)
+    public function update(UpdateRequest $request, int $id)
     {
         $data = $request->input();
 
-        if ($request->has('password')) {
-            if ($data['password'] == null) {
-                unset($data['password']);
-            } else {
-                $data['password'] = Hash::make($data['password']);
-            }
-        }
-
-        $user = $this->user->find($id);
-
-        $user = $user->update($data);
+        $user = $this->userRepository
+            ->update($id, $data);
 
         return $this->getJson($user);
-
     }
 
     /**
@@ -113,10 +106,11 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        $user = $this->user->find($id);
-        $user = $user->delete();
-        return $this->getJson($user);
+        $this->userRepository
+            ->destroy($id);
+
+        return $this->getJson(null);
     }
 }
